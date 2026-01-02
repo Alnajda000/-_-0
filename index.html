@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>الطالب يلتهم الكلمات – النجدة</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f0f8ff;
+    overflow: hidden;
+    direction: rtl;
+  }
+  #gameCanvas {
+    background-image: url('https://i.ibb.co/2n2sQwR/classroom.png'); /* خلفية صف */
+    background-size: cover;
+    display: block;
+    margin: 0 auto;
+  }
+  #scoreBoard {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    color: #0000ff;
+    font-weight: bold;
+  }
+  #logo {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 20px;
+    color: #ff4500;
+  }
+  #startScreen {
+    position: absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background-color: rgba(255,255,255,0.9);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    font-size:32px;
+    color:#000080;
+    z-index: 10;
+  }
+  #startButton {
+    margin-top:20px;
+    font-size:24px;
+    padding:10px 20px;
+    background-color:#00bfff;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+<div id="logo">النجدة للخدمات التعليمية</div>
+<div id="scoreBoard">النقاط: 0</div>
+
+<div id="startScreen">
+  <div>هيا نتعلم اللغة العربية!</div>
+  <button id="startButton">ابدأ اللعبة</button>
+</div>
+
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const playerWidth = 50; // حجم emoji اللاعب
+const playerHeight = 50;
+let playerX = canvas.width/2 - playerWidth/2;
+let playerY = canvas.height - playerHeight - 20;
+const playerSpeed = 7;
+
+let score = 0;
+
+// قائمة الكلمات والرموز (غير مكررة)
+const wordsList = [
+  {text: "قط", emoji:"🐱"}, {text:"نمر", emoji:"🐯"}, {text:"فهد", emoji:"🐆"},
+  {text:"أسد", emoji:"🦁"}, {text:"كلب", emoji:"🐶"}, {text:"سمكة", emoji:"🐟"},
+  {text:"فراشة", emoji:"🦋"}, {text:"طائرة", emoji:"✈️"}, {text:"سيارة", emoji:"🚗"},
+  {text:"دراجة", emoji:"🚲"}, {text:"كرسي", emoji:"🪑"}, {text:"سرير", emoji:"🛏️"},
+  {text:"كتاب", emoji:"📚"}, {text:"دفتر", emoji:"📓"}, {text:"قلم", emoji:"✏️"},
+  {text:"حقيبة", emoji:"🎒"}, {text:"صندوق", emoji:"📦"}, {text:"ضوء", emoji:"💡"},
+  {text:"جدار", emoji:"🧱"}, {text:"باب", emoji:"🚪"}, {text:"نافذة", emoji:"🪟"},
+  {text:"ساعة", emoji:"⏰"}, {text:"نظارة", emoji:"👓"}, {text:"هاتف", emoji:"📱"},
+  {text:"لوحة", emoji:"🖼️"}, {text:"حذاء", emoji:"👟"}, {text:"قبعة", emoji:"🎩"},
+  {text:"شجرة", emoji:"🌳"}, {text:"زهرة", emoji:"🌸"}, {text:"تفاحة", emoji:"🍎"},
+  {text:"موز", emoji:"🍌"}, {text:"عنب", emoji:"🍇"}, {text:"خوخ", emoji:"🍑"},
+  {text:"فراولة", emoji:"🍓"}, {text:"بطة", emoji:"🦆"}, {text:"أرنب", emoji:"🐇"},
+  {text:"حصان", emoji:"🐎"}, {text:"بقرة", emoji:"🐄"}, {text:"خروف", emoji:"🐑"},
+  {text:"جمل", emoji:"🐫"}, {text:"سفينة", emoji:"🚢"}, {text:"قارب", emoji:"🛶"},
+  {text:"جبل", emoji:"⛰️"}, {text:"بحر", emoji:"🌊"}, {text:"غيوم", emoji:"☁️"},
+  {text:"شمس", emoji:"☀️"}, {text:"نجمة", emoji:"⭐"}, {text:"قمر", emoji:"🌙"},
+  {text:"كرة", emoji:"⚽"}, {text:"دراجة-نارية", emoji:"🏍️"}
+];
+
+let activeWords = [];
+
+// إنشاء الكلمات المتساقطة
+function addWord(){
+  if(wordsList.length === 0) return;
+  const idx = Math.floor(Math.random() * wordsList.length);
+  const word = wordsList.splice(idx,1)[0];
+  const x = Math.random() * (canvas.width - 50);
+  activeWords.push({text: word.text, emoji: word.emoji, x: x, y: 0});
+}
+
+// التحكم باللاعب
+let keys = {};
+document.addEventListener('keydown', (e)=>{ keys[e.key] = true; });
+document.addEventListener('keyup', (e)=>{ keys[e.key] = false; });
+
+function updatePlayer(){
+  if(keys["ArrowLeft"] && playerX > 0) playerX -= playerSpeed;
+  if(keys["ArrowRight"] && playerX < canvas.width - playerWidth) playerX += playerSpeed;
+}
+
+// تحديث الكلمات
+function updateWords(){
+  for(let i=activeWords.length-1; i>=0; i--){
+    activeWords[i].y += 3;
+    // التقاط اللاعب للكلمة
+    if(activeWords[i].y + 40 >= playerY &&
+       activeWords[i].y <= playerY + playerHeight &&
+       activeWords[i].x + 40 >= playerX &&
+       activeWords[i].x <= playerX + playerWidth){
+      score += 10;
+      activeWords.splice(i,1);
+      document.getElementById('scoreBoard').innerText = "النقاط: " + score;
+      continue;
+    }
+    // إزالة الكلمات إذا تجاوزت الشاشة
+    if(activeWords[i] && activeWords[i].y > canvas.height){
+      activeWords.splice(i,1);
+    }
+  }
+}
+
+// رسم اللاعب والكلمات
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // اللاعب emoji 🧍
+  ctx.font = "50px Arial";
+  ctx.fillText("🧍", playerX, playerY + 40);
+
+  // الكلمات
+  ctx.font = "40px Arial";
+  activeWords.forEach(w=>{
+    ctx.fillText(w.emoji, w.x, w.y+30);
+  });
+}
+
+// اللعبة الرئيسية
+let gameRunning = false;
+function gameLoop(){
+  if(!gameRunning) return;
+  updatePlayer();
+  updateWords();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+// إضافة كلمة كل ثانية تقريباً
+function startGame(){
+  document.getElementById('startScreen').style.display = 'none';
+  gameRunning = true;
+  setInterval(addWord, 1000);
+  gameLoop();
+}
+
+// زر البداية
+document.getElementById('startButton').addEventListener('click', startGame);
+
+</script>
+
+</body>
+</html>
